@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VerifLomba — Meja Juri Lomba 17-an</title>
+<meta name="description" content="Terminal meja juri lomba 17-an: stopwatch presisi, pencatatan hasil, papan skor 17 lomba, dan peta arena yang bisa dijelajahi. Tanpa install, langsung kerja.">
+<meta name="theme-color" content="#7398dc">
+<link rel="canonical" href="https://kayzenn123.github.io/agent-veriflomba/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="VerifLomba — Meja Juri Lomba 17-an">
+<meta property="og:description" content="Stopwatch juri + papan skor 17 lomba 17-an. Ketik 'mulai', catat waktu, sahkan hasil.">
+<meta property="og:image" content="https://kayzenn123.github.io/agent-veriflomba/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/sofia-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/asul-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Lompat ke konten</a>
+
+<header class="topbar">
+  <a class="brand" href="#meja"><span class="brand-mark" aria-hidden="true">⌁</span> veriflomba</a>
+  <nav class="nav" aria-label="Navigasi utama">
+    <a href="#meja">Meja</a><a href="#arena">Arena</a><a href="#skor">Papan skor</a><a href="#ekspor">Ekspor</a>
+  </nav>
+  <div class="topbar-kanan">
+    <span id="lomba-chip" class="lomba-chip" aria-live="polite"></span>
+    <button type="button" id="gerak-toggle" class="btn-kecil" aria-pressed="true"><span>Gerak: Nyala</span></button>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <!-- MEJA JURI -->
+  <section id="meja" aria-labelledby="judul-meja">
+    <h1 class="judul-tangan" id="judul-meja">meja juri</h1>
+    <p class="lede">Stopwatch, buku catatan, dan 17 lomba. Duduk, ketik <kbd>mulai</kbd>, dan jadilah juri yang paling ditakuti panitia.</p>
+
+    <div class="terminal" role="region" aria-label="Terminal meja juri">
+      <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span><em>juri@lapangan — veriflomba</em></div>
+      <div id="term-log" role="log" aria-label="Catatan juri" aria-live="polite"></div>
+      <form id="term-form" autocomplete="off">
+        <label class="sr" for="term-input">Ketik perintah juri</label>
+        <span class="prompt" aria-hidden="true">juri@lapangan:~$</span>
+        <input id="term-input" type="text" placeholder="ketik 'bantuan'…" aria-describedby="term-hint" spellcheck="false" autocapitalize="off">
+      </form>
+      <p id="term-hint" class="sr">Perintah: mulai, jeda, lap, reset, lomba, skor, salin, merdeka, bersih.</p>
+
+      <div class="sw-panel">
+        <div class="sw-atas">
+          <span id="sw-status" data-st="siap">SIAP</span>
+          <span class="sw-lomba" id="sw-lomba-label">balap karung</span>
+        </div>
+        <div id="sw-display" role="timer" aria-label="Stopwatch">00:00.00</div>
+        <div class="sw-tombol">
+          <button type="button" id="btn-mulai" class="btn primer" data-aksi="mulai"></button>
+          <button type="button" id="btn-lap" class="btn">Lap</button>
+          <button type="button" id="btn-reset" class="btn">Reset</button>
+        </div>
+        <button type="button" id="btn-pakai" class="btn teks-btn">Pakai waktu ini di formulir ↓</button>
+        <div class="laps-head"><span>Putaran</span><span id="lap-count">belum ada putaran</span></div>
+        <ol id="laps" class="laps"></ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- PITA PENGUMUMAN -->
+  <div class="marquee-wrap" role="region" aria-label="Pita pengumuman">
+    <button type="button" id="mq-pause" class="btn-kecil" aria-pressed="false"><span>Jedakan pita</span></button>
+    <div class="marquee" aria-hidden="true"><div class="mq-track" id="mq-track-1"></div></div>
+    <div class="marquee rev" aria-hidden="true"><div class="mq-track" id="mq-track-2"></div></div>
+  </div>
+
+  <!-- ARENA -->
+  <section id="arena" aria-labelledby="arena-h">
+    <h2 class="of" id="arena-h" data-text="ARENA"></h2>
+    <p class="lede">Peta lapangan 17-an. Geser untuk menjelajah, cubit—eh, putar roda mouse untuk zoom, klik nomor stasiun untuk pindah lomba.</p>
+    <div id="arena-wrap">
+      <canvas id="arena-canvas" tabindex="0" role="img" aria-label="Peta arena 17 stasiun lomba. Gunakan panah untuk menggeser, plus minus untuk zoom. Daftar lomba tersedia di bagian papan skor."></canvas>
+      <div class="arena-controls" role="group" aria-label="Kontrol peta">
+        <button type="button" id="zoom-in" class="btn-kecil" aria-label="Perbesar peta">+</button>
+        <button type="button" id="zoom-out" class="btn-kecil" aria-label="Perkecil peta">−</button>
+        <button type="button" id="zoom-reset" class="btn-kecil">Reset</button>
+      </div>
+    </div>
+    <p class="hint">Tips juri: stasiun berlampu hijau-limau = lomba yang sedang aktif.</p>
+  </section>
+
+  <!-- PAPAN SKOR -->
+  <section id="skor" aria-labelledby="skor-h">
+    <h2 class="of" id="skor-h" data-text="PAPAN SKOR"></h2>
+    <div id="contoh-bar" class="contoh-bar" hidden></div>
+    <div id="lomba-chips" class="chips" role="group" aria-label="Pilih lomba"></div>
+
+    <div class="skor-head">
+      <h3 id="skor-judul-lomba">Balap Karung</h3>
+      <p id="skor-desc" class="lede"></p>
+    </div>
+
+    <div id="podium" class="podium" aria-live="polite"></div>
+
+    <div class="hasil-head"><h4>Catatan waktu</h4><span id="hasil-count"></span></div>
+    <div id="hasil-list" class="hasil-list"></div>
+    <p class="hint">Geser kartu ke kiri untuk membuang catatan. Flick yang cepat = langsung terbuka.</p>
+
+    <div class="form-wrap">
+      <h4>Catat hasil baru</h4>
+      <form id="hasil-form" novalidate>
+        <div class="field">
+          <label for="f-nama">Nama peserta / tim</label>
+          <input id="f-nama" type="text" maxlength="60" placeholder="mis. Dedi Kurniawan" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="f-kontingen">Kontingen</label>
+          <input id="f-kontingen" type="text" maxlength="20" placeholder="mis. RT 01" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="f-nilai">Nilai (<span id="f-satuan">detik</span>)</label>
+          <input id="f-nilai" type="text" inputmode="decimal" placeholder="mis. 12,45" autocomplete="off">
+        </div>
+        <p id="form-error" role="alert" hidden></p>
+        <button type="submit" class="btn primer">Sahkan</button>
+      </form>
+      <div id="stamp" class="stamp" hidden aria-hidden="true">SAH</div>
+    </div>
+  </section>
+
+  <!-- EKSPOR -->
+  <section id="ekspor" aria-labelledby="ekspor-h">
+    <h2 class="of" id="ekspor-h" data-text="EKSPOR"></h2>
+    <p class="lede">Hasil siap diumumkan ke grup WA RT atau diarsipkan panitia.</p>
+    <div class="ekspor-tombol">
+      <button type="button" id="btn-salin" class="btn primer">Salin pengumuman WA</button>
+      <button type="button" id="btn-json" class="btn">Unduh JSON</button>
+      <button type="button" id="btn-csv" class="btn">Unduh CSV</button>
+    </div>
+    <p id="ekspor-status" role="status" hidden></p>
+    <h3>Pratinjau pengumuman</h3>
+    <pre id="wa-preview" class="wa-preview"></pre>
+  </section>
+</main>
+
+<footer>
+  <p class="ttd">— Pak Juri, meja veriflomba</p>
+  <p>Protes? Ke panitia, bukan ke saya. · 30 Days of Code — Hari 5 · <a href="https://github.com/Kayzenn123/agent-veriflomba" rel="noopener noreferrer">kode sumber</a></p>
+</footer>
+
+<div id="blob" hidden aria-hidden="true">
+  <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><path d="M50 8C72 8 92 28 92 50C92 72 72 92 50 92C28 92 8 72 8 50C8 28 28 8 50 8Z"/></svg>
+</div>
+
+<script src="js/data.js" defer></script>
+<script src="js/store.js" defer></script>
+<script src="js/stopwatch.js" defer></script>
+<script src="js/terminal.js" defer></script>
+<script src="js/board.js" defer></script>
+<script src="js/arena.js" defer></script>
+<script src="js/motion.js" defer></script>
+<script src="js/flick.js" defer></script>
+<script src="js/export.js" defer></script>
+<script src="js/app.js" defer></script>
+</body>
+</html>

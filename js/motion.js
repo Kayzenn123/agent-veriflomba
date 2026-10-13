@@ -163,20 +163,20 @@
     if (reducedOS) document.body.classList.add('no-gerak');
   }
 
-  // FPS watchdog → lite otomatis bila <40 selama 2 detik
+  // FPS check sekali di awal (2 detik): bila <40 → lite. Tanpa loop abadi.
   function fpsWatch() {
-    let frames = 0, start = performance.now(), low = 0;
-    function loop() {
+    let frames = 0;
+    const t0 = performance.now();
+    (function loop() {
       frames++;
-      const now = performance.now();
-      if (now - start >= 2000) {
-        const fps = frames / ((now - start) / 1000);
-        if (fps < 40 && !lite) { lite = true; document.body.classList.add('lite'); window.VL.term && window.VL.term.log('mode ringan aktif (FPS ' + Math.round(fps) + '). gerak disederhanakan.'); }
-        frames = 0; start = now;
+      if (performance.now() - t0 < 2000) { requestAnimationFrame(loop); return; }
+      const fps = frames / ((performance.now() - t0) / 1000);
+      if (fps < 40 && !lite) {
+        lite = true;
+        document.body.classList.add('lite');
+        window.VL.term && window.VL.term.log('mode ringan aktif (FPS ' + Math.round(fps) + '). gerak disederhanakan.');
       }
-      requestAnimationFrame(loop);
-    }
-    requestAnimationFrame(loop);
+    })();
   }
 
   window.VL.motion = {
